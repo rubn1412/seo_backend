@@ -49,7 +49,7 @@ def generar_articulo(keyword: str) -> str:
 
     try:
         print(f"📤 Enviando prompt para la keyword: '{keyword}'")
-        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
+        response = requests.post("https://openrouter.ai/v1/chat/completions", headers=headers, json=data)
         print(f"📥 Status code: {response.status_code}")
 
         if response.status_code == 401:
