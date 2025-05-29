@@ -16,18 +16,12 @@ headers = {
 }
 
 def extraer_meta_descripcion(texto: str) -> str:
-    """
-    Intenta extraer una línea que parezca una meta descripción (<=160 caracteres y con buena estructura).
-    """
     for linea in texto.strip().splitlines():
         if 50 < len(linea.strip()) <= 160 and not linea.startswith("#"):
             return linea.strip()
     return ""
 
 def extraer_titulo(texto: str) -> str:
-    """
-    Extrae el primer título H1 que aparece.
-    """
     match = re.search(r"^# (.+)", texto, re.MULTILINE)
     return match.group(1).strip() if match else "Artículo SEO"
 
@@ -39,19 +33,19 @@ def generar_articulo(keyword: str) -> dict:
         return {}
 
     prompt = f"""
-Actúa como un redactor SEO. Escribe un artículo optimizado en formato Markdown para la keyword: "{keyword}".
+Actúa como un redactor SEO profesional. Escribe un artículo completo y bien estructurado en formato Markdown optimizado para la keyword: "{keyword}".
 
-Sigue esta estructura comprimida:
-- Un título H1 claro y atractivo
-- Introducción con 1 solo párrafo breve (máx. 3 líneas)
-- 3 secciones H2 con subtítulos H3. Usa frases concisas (2-3 líneas por subtítulo)
-- 3 FAQs con preguntas y respuestas cortas (2 líneas máx cada una)
-- Una meta descripción clara al final (160 caracteres)
-- Un blockquote que resuma el artículo en una sola frase
+Estructura del contenido:
+- Un título H1 claro, llamativo y optimizado.
+- Una introducción (máximo 3 líneas) que enganche al lector y resuma el contenido.
+- Tres secciones principales H2 con subtítulos H3 dentro de cada una.
+  - Usa párrafos breves y frases concisas (2-3 líneas por subtítulo).
+- Una sección de 3 preguntas frecuentes (FAQs) con respuestas cortas (2 líneas cada una).
+- Un blockquote al final que resuma el artículo en una frase poderosa.
+- Cierra con una conclusión clara que sintetice el contenido.
+- Incluye una meta descripción de máximo 160 caracteres al final (en una sola línea separada).
 
-Usa subtítulos claros y contenido enfocado en la intención de búsqueda.
-
-Devuelve solo el artículo en formato Markdown sin explicación.
+Devuelve exclusivamente el artículo en formato Markdown. No incluyas explicaciones, ni encabezados adicionales.
 """
 
     data = {
@@ -90,4 +84,5 @@ Devuelve solo el artículo en formato Markdown sin explicación.
     except Exception as e:
         print(f"❌ Error al generar artículo: {e}")
         return {}
+
 
