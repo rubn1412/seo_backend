@@ -21,18 +21,14 @@ def root():
     return {"message": "Generador de artículos SEO"}
 
 @app.post("/generate")
-def generate_article(data: GenerationRequest):
+async def generate_article(request: Request, data: dict):
+    keyword = data.get("keyword", "")
     try:
-        print(f"🚀 Generando artículo para: '{data.keyword}'")
-        result = generar_articulo(data.keyword)
-
-        if not result:
-            raise RuntimeError("Falló la generación del artículo")
-
-        return result
-
+        article = await generar_articulo(keyword)
+        return article
     except Exception as e:
-        print(f"🔥 Excepción atrapada: {e}")
-        raise HTTPException(status_code=500, detail=f"Error al generar el artículo: {str(e)}")
-
+        print("❌ ERROR AL GENERAR:", e)
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
