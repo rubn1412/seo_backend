@@ -1,9 +1,7 @@
 import os
 import requests
 from dotenv import load_dotenv
-import markdown  # Para convertir Markdown a HTML
 import re
-import json
 
 load_dotenv()
 
@@ -17,50 +15,74 @@ headers = {
     "X-Title": "SEO Generator"
 }
 
+def extraer_meta_descripcion(texto: str) -> str:
+    """
+    Intenta extraer una línea que parezca una meta descripción (<=160 caracteres y con buena estructura).
+    """
+    for linea in texto.strip().splitlines():
+        if 50 < len(linea.strip()) <= 160 and not linea.startswith("#"):
+            return linea.strip()
+    return ""
 
+def extraer_titulo(texto: str) -> str:
+    """
+    Extrae el primer título H1 que aparece.
+    """
+    match = re.search(r"^# (.+)", texto, re.MULTILINE)
+    return match.group(1).strip() if match else "Artículo SEO"
 
-def generar_articulo_individual(keyword: str) -> dict:
-    print("🖋️ Generando un artículo individual...")
+def generar_articulo(keyword: str) -> dict:
+    print("🖋️ Iniciando generación de artículo...")
+
+    if not OPENROUTER_API_KEY:
+        print("❌ API Key no encontrada.")
+        return {}
 
     prompt = f"""
-Eres un generador de contenido SEO. Tu tarea es crear una idea de artículo long-tail específica basada en la keyword: "{keyword}".
+    Actúa como un redactor SEO. Escribe un artículo optimizado en formato Markdown para la keyword: "{keyword}".
 
-Devuelve exclusivamente un JSON válido como este:
-{{
-  "title": "Zapatos cómodos para mujeres con pies anchos",
-  "content": "Elegir zapatos adecuados para pies anchos es esencial para la comodidad diaria. Aquí te mostramos opciones prácticas..."
-}}
+    Estructura:
+    - Título principal (H1)
+    - Introducción con 2 párrafos
+    - 3 secciones principales (H2) con subtítulos H3
+    - FAQs con 3 preguntas y respuestas
+    - Meta descripción (máximo 160 caracteres)
+    - Fragmento destacado en una cita (blockquote)
 
-Reglas:
-- NO escribas nada fuera del JSON.
-- El campo "title" debe ser una variación long-tail de la keyword.
-- El campo "content" debe tener 2-3 párrafos.
-- No uses Markdown, ni etiquetas, ni texto adicional.
-"""
+    Usa subtítulos claros y contenido enfocado en la intención de búsqueda.
+
+    Devuelve solo el artículo en formato Markdown sin explicación.
+    """
 
     data = {
         "model": OPENROUTER_MODEL,
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.9,
-        "max_tokens": 1024
+        "temperature": 0.7,
+        "max_tokens": 1400
     }
 
     try:
         response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
         print(f"📥 Status code: {response.status_code}")
-        response.raise_for_status()
 
-        content = response.json()["choices"][0]["message"]["content"].strip()
-
-        # Validación simple antes del parseo
-        if not content.startswith("{") or not content.endswith("}"):
-            print("❌ La respuesta no es un JSON válido.")
+        if response.status_code != 200:
+            print("❌ Respuesta inválida de OpenRouter.")
             return {}
 
-        article = json.loads(content)
-        return article
+        result = response.json()
+        content = result["choices"][0]["message"]["content"]
+
+        title = extraer_titulo(content)
+        meta = extraer_meta_descripcion(content)
+
+        return {
+            "title": title,
+            "content": content,
+            "meta_description": meta
+        }
 
     except Exception as e:
-        print(f"❌ Error al procesar la respuesta: {e}")
+        print(f"❌ Error al generar artículo: {e}")
         return {}
+
 
