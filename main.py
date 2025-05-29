@@ -1,5 +1,4 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
 import random
@@ -7,23 +6,15 @@ import re
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv()  # Carga las variables de entorno del .env
 
 app = FastAPI()
-
-# ✅ Agrega el middleware de CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Puedes reemplazar "*" con ["http://localhost:5173"] si quieres más seguridad
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 class GenerationRequest(BaseModel):
     keyword: str
     count: int = 1
 
+# Variantes de prompt para diversificar resultados
 prompt_variants = [
     "Escribe un artículo SEO detallado sobre '{}'. Usa formato markdown.",
     "Redacta un post informativo y optimizado para Google con el tema: '{}'.",
@@ -33,15 +24,15 @@ prompt_variants = [
 ]
 
 def limpiar_articulo(texto: str) -> str:
+    # Elimina textos irrelevantes añadidos por algunos modelos
     patron = r"Este artículo sigue las mejores prácticas SEO:(.|\n)*"
     return re.sub(patron, "", texto).strip()
 
 @app.post("/generate")
 def generate_articles(data: GenerationRequest):
     api_key = os.getenv("OPENROUTER_API_KEY")
-
     if not api_key:
-        raise RuntimeError("❌ No se encontró la API Key. Verifica tu archivo .env.")
+        raise HTTPException(status_code=500, detail="❌ API Key no encontrada. Verifica tu archivo .env.")
 
     articles = []
 
@@ -64,9 +55,16 @@ def generate_articles(data: GenerationRequest):
         if response.ok:
             content = response.json()["choices"][0]["message"]["content"]
             cleaned = limpiar_articulo(content)
-            articles.append(cleaned)
+            articles.append({
+                "title": f"{data.keyword.title()} - Artículo #{len(articles)+1}",
+                "content": cleaned
+            })
         else:
-            raise HTTPException(status_code=500, detail=f"Error al generar el artículo: {response.text}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error al generar el artículo: {response.status_code} - {response.text}"
+            )
 
     return {"articles": articles}
+
 
