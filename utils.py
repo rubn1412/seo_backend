@@ -6,54 +6,45 @@ load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
- @app.post("/generate")
-def generate_articles(data: GenerationRequest):
-    print("🔧 Iniciando generación de artículos...")
-    
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    print("🔐 API KEY:", "CARGADA" if api_key else "NO ENCONTRADA")
+def generar_articulo(keyword: str) -> str:
+    prompt = f"""
+    Crea un artículo SEO optimizado para la keyword long-tail relacionada con: "{keyword}".
+    Estructura:
+    - H1 (Título principal)
+    - Introducción breve (2-3 párrafos)
+    - 3-5 H2 (Subtítulos principales)
+    - Varios H3 bajo cada H2 (Detalles)
+    - 3-5 FAQs con respuestas
+    - Meta descripción (160 caracteres)
+    - Fragmento destacado (para featured snippet)
+    Formato de salida: Markdown
+    """
 
-    if not api_key:
-        raise RuntimeError("❌ No se encontró la API Key. Verifica tu archivo .env.")
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
 
-    articles = []
+    data = {
+        "model": "deepseek/deepseek-r1-0528:free",
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 2048
+    }
 
     try:
-        for i in range(data.count):
-            prompt = random.choice(prompt_variants).format(data.keyword)
-            print(f"📨 Prompt {i+1}: {prompt}")
+        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
 
-            response = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "deepseek/deepseek-r1-0528:free",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 1.0
-                }
-            )
-
-            print(f"🔄 Status HTTP {response.status_code}")
-
-            if response.ok:
-                content = response.json()["choices"][0]["message"]["content"]
-                print(f"✅ Artículo generado: {content[:60]}...")
-                cleaned = limpiar_articulo(content)
-                articles.append(cleaned)
-            else:
-                print("❌ Error al llamar a la API:", response.text)
-                raise HTTPException(status_code=500, detail=f"Error al generar el artículo: {response.text}")
-
-        return {"articles": articles}
-
-    except Exception as e:
-        print("💥 EXCEPCIÓN DETECTADA:", str(e))
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
-
-
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al conectar con OpenRouter: {e}")
+        return ""
+    except KeyError:
+        print("❌ Error: La respuesta de la API no tiene el formato esperado.")
+        return ""
 
 
 
