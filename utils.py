@@ -18,59 +18,49 @@ headers = {
 }
 
 
-def generar_articulo(keyword: str) -> list[dict]:
-    print("🖋️ Iniciando generación de artículos...")
 
-    if not OPENROUTER_API_KEY:
-        print("❌ API Key no encontrada. Verifica tu archivo .env.")
-        return []
+def generar_articulo_individual(keyword: str) -> dict:
+    print("🖋️ Generando un artículo individual...")
 
     prompt = f"""
-Actúa como un generador de contenido SEO experto. Para la palabra clave "{keyword}", genera una lista de entre 10 y 20 artículos long-tail optimizados. Devuelve el resultado en formato JSON. Cada entrada debe tener:
+Eres un generador de contenido SEO. Tu tarea es crear una idea de artículo long-tail específica basada en la keyword: "{keyword}".
 
-- "title": el título del artículo
-- "content": una introducción de 2-3 párrafos
+Devuelve exclusivamente un JSON válido como este:
+{{
+  "title": "Zapatos cómodos para mujeres con pies anchos",
+  "content": "Elegir zapatos adecuados para pies anchos es esencial para la comodidad diaria. Aquí te mostramos opciones prácticas..."
+}}
 
-Ejemplo de formato:
-
-[
-  {{
-    "title": "Zapatos mujer cómodos para oficina",
-    "content": "Los zapatos cómodos son esenciales para largas jornadas laborales..."
-  }},
-  ...
-]
-
-No incluyas explicaciones ni texto fuera del JSON.
+Reglas:
+- NO escribas nada fuera del JSON.
+- El campo "title" debe ser una variación long-tail de la keyword.
+- El campo "content" debe tener 2-3 párrafos.
+- No uses Markdown, ni etiquetas, ni texto adicional.
 """
 
     data = {
         "model": OPENROUTER_MODEL,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.7,
-        "max_tokens": 2048
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.9,
+        "max_tokens": 1024
     }
 
     try:
-        print(f"📤 Enviando prompt para la keyword: '{keyword}'")
         response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
         print(f"📥 Status code: {response.status_code}")
-
         response.raise_for_status()
-        respuesta = response.json()
-        content = respuesta["choices"][0]["message"]["content"]
 
-        # Intenta parsear el contenido como JSON
-        articles = json.loads(content)
-        return articles
+        content = response.json()["choices"][0]["message"]["content"].strip()
 
-    except (KeyError, IndexError, ValueError, json.JSONDecodeError) as e:
+        # Validación simple antes del parseo
+        if not content.startswith("{") or not content.endswith("}"):
+            print("❌ La respuesta no es un JSON válido.")
+            return {}
+
+        article = json.loads(content)
+        return article
+
+    except Exception as e:
         print(f"❌ Error al procesar la respuesta: {e}")
-        return []
-
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error al conectar con OpenRouter: {e}")
-        return []
+        return {}
 
