@@ -16,18 +16,19 @@ headers = {
     "X-Title": "SEO Generator"
 }
 
-def generar_articulo(keyword: str) -> dict:
+def generar_articulo(keyword: str) -> str:
     print("🖋️ Iniciando generación de artículo...")
 
     if not OPENROUTER_API_KEY:
         print("❌ API Key no encontrada. Verifica tu archivo .env.")
-        return {}
+        return ""
 
     prompt = f"""
     Crea un artículo SEO optimizado para la keyword long-tail relacionada con: "{keyword}".
     Estructura:
     - H1 (Título principal)
-    - Introducción breve (2-3 párrafos)
+    - Introducción breve 
+    - No mas de 800 palabras
     - 3-5 H2 (Subtítulos principales)
     - Varios H3 bajo cada H2 (Detalles)
     - 3-5 FAQs con respuestas
@@ -38,49 +39,36 @@ def generar_articulo(keyword: str) -> dict:
 
     data = {
         "model": OPENROUTER_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
         "temperature": 0.7,
         "max_tokens": 2048
     }
 
     try:
+        print(f"📤 Enviando prompt para la keyword: '{keyword}'")
         response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
         print(f"📥 Status code: {response.status_code}")
 
         if response.status_code == 401:
             print("❌ No autorizado: revisa que tu API key esté activa y asociada al modelo gratuito.")
-            return {}
+            return ""
 
         response.raise_for_status()
-        markdown_raw = response.json()["choices"][0]["message"]["content"]
+        
+        respuesta = response.json()
 
-        # Extraer el título (primer H1)
-        title_match = re.search(r"# (.+)", markdown_raw)
-        title = title_match.group(1).strip() if title_match else "Artículo generado"
-
-        # Extraer meta descripción (si viene al final)
-        meta_match = re.search(r"(?i)meta descripción[:\-]*\s*(.{30,160})", markdown_raw)
-        meta_description = meta_match.group(1).strip() if meta_match else ""
-
-        # Extraer featured snippet
-        snippet_match = re.search(r"(?i)fragmento destacado[:\-]*\s*(.+)", markdown_raw)
-        snippet = snippet_match.group(1).strip() if snippet_match else ""
-
-        # Convertir todo el markdown a HTML
-        html_content = markdown.markdown(markdown_raw)
-
-        return {
-            "title": title,
-            "content": html_content,
-            "meta_description": meta_description,
-            "snippet": snippet
-        }
+        # ✅ Validar que 'choices' esté en la respuesta
+        if "choices" in respuesta and respuesta["choices"]:
+            return respuesta["choices"][0]["message"]["content"]
+        else:
+            print("❌ La respuesta no contiene 'choices'. Respuesta completa:", respuesta)
+            return ""
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al conectar con OpenRouter: {e}")
-        return {}
-    except (KeyError, IndexError, ValueError) as e:
+        return ""
+    except Exception as e:
         print(f"❌ Error inesperado: {e}")
-        return {}
-
-        
+        return ""
