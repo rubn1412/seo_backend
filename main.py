@@ -1,20 +1,21 @@
-from fastapi import FastAPI, HTTPException
-from fastapi import Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from utils import generar_articulo
 from fastapi.responses import JSONResponse
+from utils import generar_articulo
 
 app = FastAPI()
 
+# Configurar CORS para permitir cualquier origen (útil en desarrollo)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Puedes limitar a tu dominio de frontend si quieres
+    allow_origins=["*"],  # Puedes cambiar esto por tu dominio real en producción
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Modelo de datos para recibir el JSON del frontend
 class GenerationRequest(BaseModel):
     keyword: str
 
@@ -23,11 +24,10 @@ def root():
     return {"message": "Generador de artículos SEO"}
 
 @app.post("/generate")
-async def generate_article(request: Request):
+def generate_article(data: GenerationRequest):
     try:
-        data = await request.json()
-        keyword = data.get("keyword", "")
-        article = generar_articulo(keyword)  # Quitar await
+        article = generar_articulo(data.keyword)
         return article
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
