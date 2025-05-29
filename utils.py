@@ -16,8 +16,8 @@ headers = {
     "X-Title": "SEO Generator"
 }
 
-def generar_articulo(keyword: str) -> str:
-    def generar_articulo(keyword: str) -> list[dict]:
+
+def generar_articulo(keyword: str) -> list[dict]:
     print("🖋️ Iniciando generación de artículos...")
 
     if not OPENROUTER_API_KEY:
