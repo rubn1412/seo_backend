@@ -58,6 +58,7 @@ def generar_articulo(keyword: str) -> str:
             return ""
 
         response.raise_for_status()
+        print("📄 Respuesta cruda:", response.text)
 
         respuesta = response.json()
         return respuesta["choices"][0]["message"]["content"]
