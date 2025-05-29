@@ -6,19 +6,23 @@ load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-  @app.post("/generate")
+ @app.post("/generate")
 def generate_articles(data: GenerationRequest):
+    print("🔧 Iniciando generación de artículos...")
+    
     api_key = os.getenv("OPENROUTER_API_KEY")
+    print("🔐 API KEY:", "CARGADA" if api_key else "NO ENCONTRADA")
 
     if not api_key:
         raise RuntimeError("❌ No se encontró la API Key. Verifica tu archivo .env.")
 
     articles = []
 
-    for _ in range(data.count):
-        prompt = random.choice(prompt_variants).format(data.keyword)
+    try:
+        for i in range(data.count):
+            prompt = random.choice(prompt_variants).format(data.keyword)
+            print(f"📨 Prompt {i+1}: {prompt}")
 
-        try:
             response = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={
@@ -32,19 +36,23 @@ def generate_articles(data: GenerationRequest):
                 }
             )
 
+            print(f"🔄 Status HTTP {response.status_code}")
+
             if response.ok:
                 content = response.json()["choices"][0]["message"]["content"]
+                print(f"✅ Artículo generado: {content[:60]}...")
                 cleaned = limpiar_articulo(content)
                 articles.append(cleaned)
             else:
-                print("❌ Error en la respuesta:", response.status_code, response.text)
+                print("❌ Error al llamar a la API:", response.text)
                 raise HTTPException(status_code=500, detail=f"Error al generar el artículo: {response.text}")
-        
-        except Exception as e:
-            print("❌ Excepción detectada:", str(e))  # Agregado para depurar
-            raise HTTPException(status_code=500, detail="Error inesperado en el servidor.")
 
-    return {"articles": articles}
+        return {"articles": articles}
+
+    except Exception as e:
+        print("💥 EXCEPCIÓN DETECTADA:", str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+
 
 
 
