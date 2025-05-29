@@ -1,84 +1,46 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import requests
-import random
-import re
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from utils import generar_articulo
 
 app = FastAPI()
 
-# CORS setup
+# Permitir CORS desde cualquier origen (puedes restringirlo luego si deseas)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Puedes restringir esto a tu frontend
+    allow_origins=["*"],  # Cambia esto por el dominio del frontend si quieres restringir
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Modelo de entrada esperado
 class GenerationRequest(BaseModel):
     keyword: str
     count: int = 1
 
-prompt_variants = [
-    "Escribe un artículo SEO detallado sobre '{}'. Usa formato markdown.",
-    "Redacta un post informativo y optimizado para Google con el tema: '{}'.",
-    "Genera un artículo optimizado para SEO sobre '{}'. Incluye encabezados H2 y listas.",
-    "Escribe una guía práctica SEO basada en la keyword: '{}'.",
-    "Crea un artículo que ayude a posicionar en Google con la keyword '{}'."
-]
-
-def limpiar_articulo(texto: str) -> str:
-    patron = r"Este artículo sigue las mejores prácticas SEO:(.|\n)*"
-    return re.sub(patron, "", texto).strip()
+@app.get("/")
+def root():
+    return {"message": "API de generación de artículos SEO con OpenRouter"}
 
 @app.post("/generate")
 def generate_articles(data: GenerationRequest):
     try:
-        print("🖋️ Iniciando generación de artículos...")
-
-        api_key = os.getenv("OPENROUTER_API_KEY")
-        print("🔑 API KEY:", "CARGADA" if api_key else "NO ENCONTRADA")
-
-        if not api_key:
-            raise RuntimeError("❌ No se encontró la API Key. Verifica tu archivo .env o variables en Render.")
-
+        print(f"🚀 Solicitando generación de {data.count} artículo(s) para: '{data.keyword}'")
         articles = []
 
-        for _ in range(data.count):
-            prompt = random.choice(prompt_variants).format(data.keyword)
-            print(f"📤 Enviando prompt: {prompt}")
+        for i in range(data.count):
+            print(f"📝 Generando artículo {i+1} de {data.count}...")
+            article = generar_articulo(data.keyword)
+            if not article:
+                raise RuntimeError("Falló la generación del artículo.")
+            articles.append(article)
 
-            response = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "deepseek/deepseek-r1-0528:free",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 1.0
-                }
-            )
-
-            print("📥 Status:", response.status_code)
-            if response.ok:
-                content = response.json()["choices"][0]["message"]["content"]
-                cleaned = limpiar_articulo(content)
-                articles.append(cleaned)
-            else:
-                print("❌ Error en respuesta:", response.text)
-                raise HTTPException(status_code=500, detail=f"Error al generar el artículo: {response.text}")
-
-        return {"articles": articles}
+        print("✅ Generación completada.")
+        return {"keyword": data.keyword, "articles": articles}
 
     except Exception as e:
-        print("🔥 Excepción atrapada:", str(e))
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        print(f"🔥 Excepción atrapada: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al generar el artículo: {str(e)}")
 
 
