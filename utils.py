@@ -7,6 +7,12 @@ load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_MODEL = "deepseek/deepseek-r1-0528:free"  # 🔒 Forzamos el modelo gratuito
 
+headers = {
+    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+    "Content-Type": "application/json",
+    "HTTP-Referer": "http://localhost:3000",  # O la URL real de tu frontend
+    "X-Title": "SEO Generator" }
+
 def generar_articulo(keyword: str) -> str:
     print("🖋️ Iniciando generación de artículo...")
     
