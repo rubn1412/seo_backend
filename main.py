@@ -3,6 +3,7 @@ from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from utils import generar_articulo
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
@@ -22,14 +23,11 @@ def root():
     return {"message": "Generador de artículos SEO"}
 
 @app.post("/generate")
-async def generate_article(request: Request, data: dict):
-    keyword = data.get("keyword", "")
+async def generate_article(request: Request):
     try:
-        article = await generar_articulo(keyword)
+        data = await request.json()
+        keyword = data.get("keyword", "")
+        article = generar_articulo(keyword)  # Quitar await
         return article
     except Exception as e:
-        print("❌ ERROR AL GENERAR:", e)
-        import traceback
-        traceback.print_exc()
         return JSONResponse(status_code=500, content={"error": str(e)})
-
