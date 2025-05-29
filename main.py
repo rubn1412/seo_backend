@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
 import random
@@ -9,6 +10,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = FastAPI()
+
+# ✅ Agrega el middleware de CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Puedes reemplazar "*" con ["http://localhost:5173"] si quieres más seguridad
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class GenerationRequest(BaseModel):
     keyword: str
@@ -45,7 +55,7 @@ def generate_articles(data: GenerationRequest):
                 "Content-Type": "application/json"
             },
             json={
-                "model": "deepseek/deepseek-r1-0528:free",  # <- modelo correcto
+                "model": "deepseek/deepseek-r1-0528:free",
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 1.0
             }
@@ -59,3 +69,4 @@ def generate_articles(data: GenerationRequest):
             raise HTTPException(status_code=500, detail=f"Error al generar el artículo: {response.text}")
 
     return {"articles": articles}
+
