@@ -38,25 +38,21 @@ def generar_articulo(keyword: str) -> dict:
         print("❌ API Key no encontrada.")
         return {}
 
-    
     prompt = f"""
-    Actúa como un redactor SEO. Escribe un artículo optimizado en formato Markdown para la keyword: "{keyword}".
-    
-    Sigue esta estructura comprimida:
-    - Un título H1 claro y atractivo
-    - Introducción con 1 solo párrafo breve (máx. 3 líneas)
-    - 3 secciones H2 con subtítulos H3. Usa frases concisas (2-3 líneas por subtítulo)
-    - 3 FAQs con preguntas y respuestas cortas (2 líneas máx cada una)
-    - Una meta descripción clara al final (160 caracteres)
-    - Un blockquote que resuma el artículo en una sola frase
-    
-    Usa lenguaje directo, evita redundancias. No agregues explicaciones fuera del artículo. Devuelve solo el contenido en Markdown.
-    """
+Actúa como un redactor SEO. Escribe un artículo optimizado en formato Markdown para la keyword: "{keyword}".
 
-    Usa subtítulos claros y contenido enfocado en la intención de búsqueda.
+Sigue esta estructura comprimida:
+- Un título H1 claro y atractivo
+- Introducción con 1 solo párrafo breve (máx. 3 líneas)
+- 3 secciones H2 con subtítulos H3. Usa frases concisas (2-3 líneas por subtítulo)
+- 3 FAQs con preguntas y respuestas cortas (2 líneas máx cada una)
+- Una meta descripción clara al final (160 caracteres)
+- Un blockquote que resuma el artículo en una sola frase
 
-    Devuelve solo el artículo en formato Markdown sin explicación.
-    """
+Usa subtítulos claros y contenido enfocado en la intención de búsqueda.
+
+Devuelve solo el artículo en formato Markdown sin explicación.
+"""
 
     data = {
         "model": OPENROUTER_MODEL,
@@ -76,15 +72,12 @@ def generar_articulo(keyword: str) -> dict:
         result = response.json()
         print("📤 Respuesta JSON completa:")
         print(result)
-        
-        # Verifica que contenga 'choices' antes de usarla
+
         if "choices" not in result:
             print("❌ La respuesta no contiene 'choices'.")
             return {}
-        
-        content = result["choices"][0]["message"]["content"]
-           
 
+        content = result["choices"][0]["message"]["content"]
         title = extraer_titulo(content)
         meta = extraer_meta_descripcion(content)
 
@@ -97,5 +90,4 @@ def generar_articulo(keyword: str) -> dict:
     except Exception as e:
         print(f"❌ Error al generar artículo: {e}")
         return {}
-
 
