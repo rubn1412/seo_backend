@@ -6,42 +6,47 @@ load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-def generar_articulo(keyword: str) -> str:
-    prompt = f"""
-    Crea un artículo SEO optimizado para la keyword long-tail relacionada con: "{keyword}".
-    Estructura:
-    - H1 (Título principal)
-    - Introducción breve (2-3 párrafos)
-    - 3-5 H2 (Subtítulos principales)
-    - Varios H3 bajo cada H2 (Detalles)
-    - 3-5 FAQs con respuestas
-    - Meta descripción (160 caracteres)
-    - Fragmento destacado (para featured snippet)
-    Formato de salida: Markdown
-    """
+  @app.post("/generate")
+def generate_articles(data: GenerationRequest):
+    api_key = os.getenv("OPENROUTER_API_KEY")
 
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
+    if not api_key:
+        raise RuntimeError("❌ No se encontró la API Key. Verifica tu archivo .env.")
 
-    data = {
-        "model": "deepseek/deepseek-r1-0528:free",
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.7,
-        "max_tokens": 2048
-    }
+    articles = []
 
-    try:
-        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+    for _ in range(data.count):
+        prompt = random.choice(prompt_variants).format(data.keyword)
 
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error al conectar con OpenRouter: {e}")
-        return ""
-    except KeyError:
-        print("❌ Error: La respuesta de la API no tiene el formato esperado.")
-        return ""
+        try:
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "deepseek/deepseek-r1-0528:free",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 1.0
+                }
+            )
+
+            if response.ok:
+                content = response.json()["choices"][0]["message"]["content"]
+                cleaned = limpiar_articulo(content)
+                articles.append(cleaned)
+            else:
+                print("❌ Error en la respuesta:", response.status_code, response.text)
+                raise HTTPException(status_code=500, detail=f"Error al generar el artículo: {response.text}")
+        
+        except Exception as e:
+            print("❌ Excepción detectada:", str(e))  # Agregado para depurar
+            raise HTTPException(status_code=500, detail="Error inesperado en el servidor.")
+
+    return {"articles": articles}
+
+
+
+
+        
