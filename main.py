@@ -27,26 +27,20 @@ def root():
 def generate_articles(data: GenerationRequest):
     try:
         print(f"🚀 Solicitando generación de {data.count} artículo(s) para: '{data.keyword}'")
-        articles = []
+        all_articles = []
 
         for i in range(data.count):
-            print(f"📝 Generando artículo {i+1} de {data.count}...")
-            article_data = generar_articulo(data.keyword)
-
-            if not article_data or not article_data.get("content"):
+            print(f"📝 Generando set {i+1} de {data.count}...")
+            articles = generar_articulo(data.keyword)
+            if not articles:
                 raise RuntimeError("Falló la generación del artículo.")
-
-            articles.append(article_data)
+            all_articles.extend(articles)
 
         print("✅ Generación completada.")
-        return {
-            "keyword": data.keyword,
-            "articles": articles
-        }
+        return {"keyword": data.keyword, "articles": all_articles}
 
     except Exception as e:
         print(f"🔥 Excepción atrapada: {e}")
         raise HTTPException(status_code=500, detail=f"Error al generar el artículo: {str(e)}")
-
 
 
