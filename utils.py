@@ -70,7 +70,16 @@ def generar_articulo(keyword: str) -> dict:
             return {}
 
         result = response.json()
+        print("📤 Respuesta JSON completa:")
+        print(result)
+        
+        # Verifica que contenga 'choices' antes de usarla
+        if "choices" not in result:
+            print("❌ La respuesta no contiene 'choices'.")
+            return {}
+        
         content = result["choices"][0]["message"]["content"]
+           
 
         title = extraer_titulo(content)
         meta = extraer_meta_descripcion(content)
