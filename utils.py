@@ -5,8 +5,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_MODEL = "deepseek/deepseek-r1-0528:free"  # 🔒 Forzamos el modelo gratuito
 
 def generar_articulo(keyword: str) -> str:
+    print("🖋️ Iniciando generación de artículo...")
+    
+    if not OPENROUTER_API_KEY:
+        print("❌ API Key no encontrada. Verifica tu archivo .env.")
+        return ""
+
     prompt = f"""
     Crea un artículo SEO optimizado para la keyword long-tail relacionada con: "{keyword}".
     Estructura:
@@ -26,7 +33,7 @@ def generar_articulo(keyword: str) -> str:
     }
 
     data = {
-        "model": "deepseek/deepseek-r1-0528:free",
+        "model": OPENROUTER_MODEL,
         "messages": [
             {"role": "user", "content": prompt}
         ],
@@ -35,15 +42,26 @@ def generar_articulo(keyword: str) -> str:
     }
 
     try:
+        print(f"📤 Enviando prompt para la keyword: '{keyword}'")
         response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
+        print(f"📥 Status code: {response.status_code}")
+
+        if response.status_code == 401:
+            print("❌ No autorizado: revisa que tu API key esté activa y asociada al modelo gratuito.")
+            print("🔐 Modelo usado:", OPENROUTER_MODEL)
+            return ""
+
         response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+
+        respuesta = response.json()
+        return respuesta["choices"][0]["message"]["content"]
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al conectar con OpenRouter: {e}")
         return ""
-    except KeyError:
+    except (KeyError, IndexError):
         print("❌ Error: La respuesta de la API no tiene el formato esperado.")
+        print("📄 Respuesta cruda:", response.text)
         return ""
 
 
