@@ -5,13 +5,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_MODEL = "openrouter/cinematika-7b:free" # 🔒 Forzamos el modelo gratuito
+OPENROUTER_MODEL = "deepseek/deepseek-r1-0528:free"  # modelo alternativo gratuito
 
 headers = {
     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
     "Content-Type": "application/json",
-    "HTTP-Referer": "http://localhost:3000",  # O la URL real de tu frontend
-    "X-Title": "SEO Generator" }
+    "Referer": "http://localhost:3000",  # IMPORTANTE: sin 'HTTP-'
+    "X-Title": "SEO Generator"
+}
 
 def generar_articulo(keyword: str) -> str:
     print("🖋️ Iniciando generación de artículo...")
@@ -33,11 +34,6 @@ def generar_articulo(keyword: str) -> str:
     Formato de salida: Markdown
     """
 
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
     data = {
         "model": OPENROUTER_MODEL,
         "messages": [
@@ -49,12 +45,11 @@ def generar_articulo(keyword: str) -> str:
 
     try:
         print(f"📤 Enviando prompt para la keyword: '{keyword}'")
-        response = requests.post("https://openrouter.ai/v1/chat/completions", headers=headers, json=data)
+        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
         print(f"📥 Status code: {response.status_code}")
 
         if response.status_code == 401:
             print("❌ No autorizado: revisa que tu API key esté activa y asociada al modelo gratuito.")
-            print("🔐 Modelo usado:", OPENROUTER_MODEL)
             return ""
 
         response.raise_for_status()
@@ -66,11 +61,10 @@ def generar_articulo(keyword: str) -> str:
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al conectar con OpenRouter: {e}")
         return ""
-    except (KeyError, IndexError):
+    except (KeyError, IndexError, ValueError):
         print("❌ Error: La respuesta de la API no tiene el formato esperado.")
         print("📄 Respuesta cruda:", response.text)
         return ""
-
 
 
         
