@@ -53,8 +53,7 @@ def generar_articulo(keyword: str) -> str:
             return ""
 
         response.raise_for_status()
-        print("📄 Respuesta cruda:", response.text)
-
+        
         respuesta = response.json()
         return respuesta["choices"][0]["message"]["content"]
 
@@ -63,7 +62,6 @@ def generar_articulo(keyword: str) -> str:
         return ""
     except (KeyError, IndexError, ValueError):
         print("❌ Error: La respuesta de la API no tiene el formato esperado.")
-        print("📄 Respuesta cruda:", response.text)
         return ""
 
 
