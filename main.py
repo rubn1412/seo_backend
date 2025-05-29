@@ -5,39 +5,31 @@ from utils import generar_articulo
 
 app = FastAPI()
 
-# Permitir CORS desde cualquier origen (puedes restringirlo luego si deseas)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cambia esto por el dominio del frontend si quieres restringir
+    allow_origins=["*"],  # Puedes limitar a tu dominio de frontend si quieres
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Modelo de entrada esperado
 class GenerationRequest(BaseModel):
     keyword: str
-    count: int = 1
 
 @app.get("/")
 def root():
-    return {"message": "API de generación de artículos SEO con OpenRouter"}
+    return {"message": "Generador de artículos SEO"}
 
 @app.post("/generate")
-def generate_articles(data: GenerationRequest):
+def generate_article(data: GenerationRequest):
     try:
-        print(f"🚀 Solicitando generación de {data.count} artículo(s) para: '{data.keyword}'")
-        all_articles = []
+        print(f"🚀 Generando artículo para: '{data.keyword}'")
+        result = generar_articulo(data.keyword)
 
-        for i in range(data.count):
-            print(f"📝 Generando set {i+1} de {data.count}...")
-            articles = generar_articulo(data.keyword)
-            if not articles:
-                raise RuntimeError("Falló la generación del artículo.")
-            all_articles.extend(articles)
+        if not result:
+            raise RuntimeError("Falló la generación del artículo")
 
-        print("✅ Generación completada.")
-        return {"keyword": data.keyword, "articles": all_articles}
+        return result
 
     except Exception as e:
         print(f"🔥 Excepción atrapada: {e}")
