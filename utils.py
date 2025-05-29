@@ -3,6 +3,7 @@ import requests
 from dotenv import load_dotenv
 import markdown  # Para convertir Markdown a HTML
 import re
+import json
 
 load_dotenv()
 
