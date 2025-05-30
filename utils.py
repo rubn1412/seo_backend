@@ -16,7 +16,7 @@ headers = {
 }
 
 def extraer_meta_descripcion(texto: str) -> str:
-    for linea in texto.strip().splitlines():
+    for linea in reversed(texto.strip().splitlines()):
         if 50 < len(linea.strip()) <= 160 and not linea.startswith("#"):
             return linea.strip()
     return ""
@@ -33,26 +33,31 @@ def generar_articulo(keyword: str) -> dict:
         return {}
 
     prompt = f"""
-Actúa como un redactor SEO profesional. Escribe un artículo completo y bien estructurado en formato Markdown optimizado para la keyword: "{keyword}".
+Actúa como un redactor SEO profesional. Escribe un artículo completo y bien estructurado usando **formato Markdown simple**, optimizado para la palabra clave: "{keyword}".
 
-Estructura del contenido:
+### Instrucciones:
+- No uses bloques de código (no encierres el contenido entre triple backtick ```).
+- No agregues etiquetas HTML ni encabezados externos.
+- Entrega directamente el contenido como texto plano en formato Markdown.
+
+### Estructura solicitada:
 - Un título H1 claro, llamativo y optimizado.
-- Una introducción (máximo 3 líneas) que enganche al lector y resuma el contenido.
-- Tres secciones principales H2 con subtítulos H3 dentro de cada una.
+- Una introducción breve (máx. 3 líneas).
+- Tres secciones principales con H2, cada una con subtítulos H3.
   - Usa párrafos breves y frases concisas (2-3 líneas por subtítulo).
-- Una sección de 3 preguntas frecuentes (FAQs) con respuestas cortas (2 líneas cada una).
-- Un blockquote al final que resuma el artículo en una frase poderosa.
-- Cierra con una conclusión clara que sintetice el contenido.
-- Incluye una meta descripción de máximo 160 caracteres al final (en una sola línea separada).
+- Una sección de 3 preguntas frecuentes (FAQs) con respuestas de 2 líneas cada una.
+- Un blockquote final que resuma el artículo en una sola frase poderosa.
+- Una conclusión clara.
+- Finalmente, al final del todo, agrega una meta descripción (máx. 160 caracteres, una sola línea).
 
-Devuelve exclusivamente el artículo en formato Markdown. No incluyas explicaciones, ni encabezados adicionales.
+Asegúrate de completar todo el artículo antes de enviarlo.
 """
 
     data = {
         "model": OPENROUTER_MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.7,
-        "max_tokens": 1400
+        "max_tokens": 2000  # Aumentado para evitar cortes
     }
 
     try:
@@ -84,5 +89,4 @@ Devuelve exclusivamente el artículo en formato Markdown. No incluyas explicacio
     except Exception as e:
         print(f"❌ Error al generar artículo: {e}")
         return {}
-
 
