@@ -22,8 +22,18 @@ def extraer_meta_descripcion(texto: str) -> str:
     return ""
 
 def extraer_titulo(texto: str) -> str:
-    match = re.search(r"^# (.+)", texto, re.MULTILINE)
-    return match.group(1).strip() if match else "Artículo SEO"
+    # Buscar línea que empiece con exactamente un '# '
+    for linea in texto.strip().splitlines():
+        if linea.strip().startswith("# "):
+            return linea.strip("# ").strip()
+
+    # Si no se encuentra, usar la primera línea no vacía
+    for linea in texto.strip().splitlines():
+        if linea.strip():
+            return linea.strip()
+
+    return "Artículo SEO"
+
 
 def generar_articulo(keyword: str) -> dict:
     print("🖋️ Iniciando generación de artículo...")
